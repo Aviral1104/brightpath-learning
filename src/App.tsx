@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherCourses from "./pages/teacher/TeacherCourses";
+import TeacherCourseDetail from "./pages/teacher/TeacherCourseDetail";
 import TeacherAssignments from "./pages/teacher/TeacherAssignments";
 import TeacherFeedback from "./pages/teacher/TeacherFeedback";
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/teacher" element={<ProtectedRoute allowedRole="teacher"><TeacherDashboard /></ProtectedRoute>} />
             <Route path="/teacher/courses" element={<ProtectedRoute allowedRole="teacher"><TeacherCourses /></ProtectedRoute>} />
+            <Route path="/teacher/courses/:courseId" element={<ProtectedRoute allowedRole="teacher"><TeacherCourseDetail /></ProtectedRoute>} />
             <Route path="/teacher/assignments" element={<ProtectedRoute allowedRole="teacher"><TeacherAssignments /></ProtectedRoute>} />
             <Route path="/teacher/feedback" element={<ProtectedRoute allowedRole="teacher"><TeacherFeedback /></ProtectedRoute>} />
             <Route path="/student" element={<ProtectedRoute allowedRole="student"><StudentDashboard /></ProtectedRoute>} />
