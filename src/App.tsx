@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherCourses from "./pages/teacher/TeacherCourses";
+import TeacherCourseDetail from "./pages/teacher/TeacherCourseDetail";
 import TeacherAssignments from "./pages/teacher/TeacherAssignments";
 import TeacherFeedback from "./pages/teacher/TeacherFeedback";
 import StudentDashboard from "./pages/student/StudentDashboard";
