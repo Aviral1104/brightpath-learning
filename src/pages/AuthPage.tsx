@@ -16,7 +16,14 @@ const roleLabels: Record<UserRole, { emoji: string; label: string; gradient: str
 };
 
 export default function AuthPage() {
-  const { login, signup } = useAuth();
+  const { login, signup, user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(`/${user.role}`, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('login');
   const [role, setRole] = useState<UserRole>('student');
