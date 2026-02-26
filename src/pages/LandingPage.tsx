@@ -72,26 +72,6 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <div className="mt-20 text-center">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">Designed for Accessibility</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto mb-12">
-            Every feature is thoughtfully crafted to minimize cognitive overload and maximize learning potential.
-          </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-            {[
-              { icon: '📖', title: 'Large, Clear Text', desc: 'Readable fonts and generous spacing.' },
-              { icon: '🎨', title: 'Calm Colors', desc: 'Low sensory overload with soft palette.' },
-              { icon: '🔊', title: 'Multi-Media', desc: 'Text, audio, video — your way.' },
-              { icon: '💬', title: 'Direct Feedback', desc: 'Personalized teacher feedback.' },
-            ].map((f, i) => (
-              <div key={i} className="bg-card rounded-xl p-6 border border-border animate-fade-in" style={{ animationDelay: `${0.5 + i * 0.1}s` }}>
-                <span className="text-3xl mb-3 block">{f.icon}</span>
-                <h3 className="font-display font-semibold text-foreground mb-1">{f.title}</h3>
-                <p className="text-muted-foreground text-sm">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
       <footer className="border-t border-border bg-card py-8 text-center text-sm text-muted-foreground">
