@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { getSupabaseClient } from '@/integrations/backend/client';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -28,7 +28,7 @@ export default function TeacherDashboard() {
     if (!editName.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from('profiles').update({ name: editName, school: editSchool, phone: editPhone, bio: editBio }).eq('user_id', user?.id);
+      const { error } = await getSupabaseClient().from('profiles').update({ name: editName, school: editSchool, phone: editPhone, bio: editBio }).eq('user_id', user?.id);
       if (error) throw error;
       await refreshProfile();
       toast.success('Profile updated!');
@@ -107,3 +107,4 @@ export default function TeacherDashboard() {
     </DashboardLayout>
   );
 }
+
