@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,14 @@ const roleLabels: Record<UserRole, { emoji: string; label: string; gradient: str
 };
 
 export default function AuthPage() {
-  const { login, signup } = useAuth();
+  const { login, signup, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(`/${user.role}`, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
   const [mode, setMode] = useState<Mode>('login');
   const [role, setRole] = useState<UserRole>('student');
   const [email, setEmail] = useState('');
