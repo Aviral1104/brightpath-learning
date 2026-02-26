@@ -24,7 +24,6 @@ export default function AuthPage() {
       navigate(`/${user.role}`, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
-  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('login');
   const [role, setRole] = useState<UserRole>('student');
   const [email, setEmail] = useState('');
