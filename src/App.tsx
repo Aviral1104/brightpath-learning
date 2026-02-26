@@ -2,9 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LandingPage from "./pages/LandingPage";
+import AuthPage from "./pages/AuthPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TeacherCourses from "./pages/teacher/TeacherCourses";
 import TeacherAssignments from "./pages/teacher/TeacherAssignments";
@@ -20,6 +21,14 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole?: string }) {
+  const { user, loading, isAuthenticated } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground text-lg">Loading...</p></div>;
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  if (allowedRole && user?.role !== allowedRole) return <Navigate to={`/${user?.role}`} replace />;
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -29,17 +38,18 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/teacher" element={<TeacherDashboard />} />
-            <Route path="/teacher/courses" element={<TeacherCourses />} />
-            <Route path="/teacher/assignments" element={<TeacherAssignments />} />
-            <Route path="/teacher/feedback" element={<TeacherFeedback />} />
-            <Route path="/student" element={<StudentDashboard />} />
-            <Route path="/student/courses" element={<StudentCourses />} />
-            <Route path="/student/assignments" element={<StudentAssignments />} />
-            <Route path="/student/feedback" element={<StudentFeedback />} />
-            <Route path="/parent" element={<ParentDashboard />} />
-            <Route path="/parent/progress" element={<ParentProgress />} />
-            <Route path="/parent/feedback" element={<ParentFeedback />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/teacher" element={<ProtectedRoute allowedRole="teacher"><TeacherDashboard /></ProtectedRoute>} />
+            <Route path="/teacher/courses" element={<ProtectedRoute allowedRole="teacher"><TeacherCourses /></ProtectedRoute>} />
+            <Route path="/teacher/assignments" element={<ProtectedRoute allowedRole="teacher"><TeacherAssignments /></ProtectedRoute>} />
+            <Route path="/teacher/feedback" element={<ProtectedRoute allowedRole="teacher"><TeacherFeedback /></ProtectedRoute>} />
+            <Route path="/student" element={<ProtectedRoute allowedRole="student"><StudentDashboard /></ProtectedRoute>} />
+            <Route path="/student/courses" element={<ProtectedRoute allowedRole="student"><StudentCourses /></ProtectedRoute>} />
+            <Route path="/student/assignments" element={<ProtectedRoute allowedRole="student"><StudentAssignments /></ProtectedRoute>} />
+            <Route path="/student/feedback" element={<ProtectedRoute allowedRole="student"><StudentFeedback /></ProtectedRoute>} />
+            <Route path="/parent" element={<ProtectedRoute allowedRole="parent"><ParentDashboard /></ProtectedRoute>} />
+            <Route path="/parent/progress" element={<ProtectedRoute allowedRole="parent"><ParentProgress /></ProtectedRoute>} />
+            <Route path="/parent/feedback" element={<ProtectedRoute allowedRole="parent"><ParentFeedback /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
