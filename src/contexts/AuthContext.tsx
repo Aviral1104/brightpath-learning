@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Session, User as SupaUser } from '@supabase/supabase-js';
+import { getSupabaseClient, isBackendConfigured } from '@/integrations/backend/client';
+import { Session } from '@supabase/supabase-js';
 
 export type UserRole = 'teacher' | 'student' | 'parent';
 
@@ -29,6 +29,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function fetchUserProfile(userId: string): Promise<AppUser | null> {
+  const supabase = getSupabaseClient();
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -61,12 +63,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        // Use setTimeout to avoid deadlock with Supabase auth
+    if (!isBackendConfigured) {
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
+    const supabase = getSupabaseClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      setSession(nextSession);
+      if (nextSession?.user) {
         setTimeout(async () => {
-          const appUser = await fetchUserProfile(session.user.id);
+          const appUser = await fetchUserProfile(nextSession.user.id);
           setUser(appUser);
           setLoading(false);
         }, 0);
@@ -76,10 +85,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user.id).then((appUser) => {
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession?.user) {
+        fetchUserProfile(initialSession.user.id).then((appUser) => {
           setUser(appUser);
           setLoading(false);
         });
@@ -92,13 +101,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!isBackendConfigured) return { error: 'Backend is not configured for this build yet.' };
+    const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
     return {};
   };
 
   const signup = async (email: string, password: string, role: UserRole, meta: { name: string; school?: string }) => {
-    const { error } = await supabase.auth.signUp({
+    if (!isBackendConfigured) return { error: 'Backend is not configured for this build yet.' };
+    const { error } = await getSupabaseClient().auth.signUp({
       email,
       password,
       options: {
@@ -111,13 +122,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (!isBackendConfigured) return;
+    await getSupabaseClient().auth.signOut();
     setUser(null);
     setSession(null);
   };
 
   const refreshProfile = async () => {
-    if (session?.user) {
+    if (session?.user && isBackendConfigured) {
       const appUser = await fetchUserProfile(session.user.id);
       setUser(appUser);
     }

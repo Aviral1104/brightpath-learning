@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { getSupabaseClient } from '@/integrations/backend/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -45,7 +45,7 @@ export function useCourses() {
   const coursesQuery = useQuery({
     queryKey: ['courses', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('courses')
         .select('*')
         .eq('teacher_id', user!.id)
@@ -58,7 +58,7 @@ export function useCourses() {
 
   const createCourse = useMutation({
     mutationFn: async (input: { title: string; description: string; icon: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabaseClient()
         .from('courses')
         .insert({ title: input.title, description: input.description, icon: input.icon, teacher_id: user!.id })
         .select()
@@ -75,7 +75,7 @@ export function useCourses() {
 
   const deleteCourse = useMutation({
     mutationFn: async (courseId: string) => {
-      const { error } = await supabase.from('courses').delete().eq('id', courseId);
+      const { error } = await getSupabaseClient().from('courses').delete().eq('id', courseId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -87,7 +87,7 @@ export function useCourses() {
 
   const updateCourse = useMutation({
     mutationFn: async (input: { id: string; title: string; description: string; icon: string }) => {
-      const { error } = await supabase
+      const { error } = await getSupabaseClient()
         .from('courses')
         .update({ title: input.title, description: input.description, icon: input.icon })
         .eq('id', input.id);
@@ -110,14 +110,14 @@ export function useCourseDetail(courseId: string | undefined) {
   const query = useQuery({
     queryKey: ['course-detail', courseId],
     queryFn: async (): Promise<CourseWithContent | null> => {
-      const { data: course, error } = await supabase
+      const { data: course, error } = await getSupabaseClient()
         .from('courses')
         .select('*')
         .eq('id', courseId!)
         .single();
       if (error) throw error;
 
-      const { data: chapters } = await supabase
+      const { data: chapters } = await getSupabaseClient()
         .from('chapters')
         .select('*')
         .eq('course_id', courseId!)
@@ -126,7 +126,7 @@ export function useCourseDetail(courseId: string | undefined) {
       const chapterIds = (chapters || []).map((c) => c.id);
       let subchapters: DbSubchapter[] = [];
       if (chapterIds.length > 0) {
-        const { data } = await supabase
+        const { data } = await getSupabaseClient()
           .from('subchapters')
           .select('*')
           .in('chapter_id', chapterIds)
@@ -150,7 +150,7 @@ export function useCourseDetail(courseId: string | undefined) {
   const addChapter = useMutation({
     mutationFn: async (input: { title: string; description: string }) => {
       const existing = query.data?.chapters.length || 0;
-      const { error } = await supabase.from('chapters').insert({
+      const { error } = await getSupabaseClient().from('chapters').insert({
         course_id: courseId!,
         title: input.title,
         description: input.description,
@@ -164,7 +164,7 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const updateChapter = useMutation({
     mutationFn: async (input: { id: string; title: string; description: string }) => {
-      const { error } = await supabase.from('chapters').update({ title: input.title, description: input.description }).eq('id', input.id);
+      const { error } = await getSupabaseClient().from('chapters').update({ title: input.title, description: input.description }).eq('id', input.id);
       if (error) throw error;
     },
     onSuccess: () => { refetch(); toast.success('Chapter updated!'); },
@@ -173,7 +173,7 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const deleteChapter = useMutation({
     mutationFn: async (chapterId: string) => {
-      const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
+      const { error } = await getSupabaseClient().from('chapters').delete().eq('id', chapterId);
       if (error) throw error;
     },
     onSuccess: () => { refetch(); toast.success('Chapter deleted'); },
@@ -184,7 +184,7 @@ export function useCourseDetail(courseId: string | undefined) {
     mutationFn: async (input: { chapter_id: string; title: string; content: string; media_type: string }) => {
       const chapter = query.data?.chapters.find((c) => c.id === input.chapter_id);
       const existing = chapter?.subchapters.length || 0;
-      const { error } = await supabase.from('subchapters').insert({
+      const { error } = await getSupabaseClient().from('subchapters').insert({
         chapter_id: input.chapter_id,
         title: input.title,
         content: input.content,
@@ -199,7 +199,7 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const updateSubchapter = useMutation({
     mutationFn: async (input: { id: string; title: string; content: string; media_type: string }) => {
-      const { error } = await supabase.from('subchapters').update({
+      const { error } = await getSupabaseClient().from('subchapters').update({
         title: input.title, content: input.content, media_type: input.media_type,
       }).eq('id', input.id);
       if (error) throw error;
@@ -210,7 +210,7 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const deleteSubchapter = useMutation({
     mutationFn: async (subId: string) => {
-      const { error } = await supabase.from('subchapters').delete().eq('id', subId);
+      const { error } = await getSupabaseClient().from('subchapters').delete().eq('id', subId);
       if (error) throw error;
     },
     onSuccess: () => { refetch(); toast.success('Lesson deleted'); },
