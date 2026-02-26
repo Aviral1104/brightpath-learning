@@ -1,15 +1,56 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { mockCourses, mockAssignments, mockSubmissions } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, ClipboardList, MessageSquare, Users, Plus } from 'lucide-react';
+import { BookOpen, ClipboardList, MessageSquare, Users, Plus, UserCog } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export default function TeacherDashboard() {
-  const { user } = useAuth();
-  const courses = mockCourses.filter((c) => c.teacherId === user?.id);
-  const assignments = mockAssignments.filter((a) => a.teacherId === user?.id);
+  const { user, refreshProfile } = useAuth();
+  const courses = mockCourses.filter((c) => c.teacherId === (user?.id || 't1'));
+  const assignments = mockAssignments.filter((a) => a.teacherId === (user?.id || 't1'));
   const pendingFeedback = mockSubmissions.filter((s) => !s.feedback);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editSchool, setEditSchool] = useState(user?.school || '');
+  const [editPhone, setEditPhone] = useState(user?.phone || '');
+  const [editBio, setEditBio] = useState(user?.bio || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ name: editName, school: editSchool, phone: editPhone, bio: editBio })
+        .eq('user_id', user?.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast.success('Profile updated!');
+      setEditOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const stats = [
     { label: 'Courses', value: courses.length, icon: BookOpen, color: 'bg-primary/10 text-primary' },
@@ -21,13 +62,49 @@ export default function TeacherDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-foreground mb-1">
-            Welcome back, {user?.name?.split(' ')[0]} 👋
-          </h1>
-          <p className="text-muted-foreground text-accessible">
-            Here's an overview of your teaching activities.
-          </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground mb-1">
+              Welcome back, {user?.name?.split(' ')[0] || 'Teacher'} 👋
+            </h1>
+            <p className="text-muted-foreground text-accessible">
+              Here's an overview of your teaching activities.
+            </p>
+          </div>
+
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <UserCog className="w-4 h-4" /> Edit Profile
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-display">Edit Profile</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <div>
+                  <Label htmlFor="editName">Full Name *</Label>
+                  <Input id="editName" value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="editSchool">School / Institution</Label>
+                  <Input id="editSchool" value={editSchool} onChange={(e) => setEditSchool(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="editPhone">Phone</Label>
+                  <Input id="editPhone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="editBio">Bio</Label>
+                  <Input id="editBio" value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder="Tell us about yourself" className="mt-1" />
+                </div>
+                <Button onClick={handleSaveProfile} disabled={saving} className="w-full gradient-teacher text-primary-foreground border-0">
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Stats */}

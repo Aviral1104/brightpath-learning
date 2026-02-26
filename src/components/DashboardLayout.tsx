@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { BookOpen, ClipboardList, MessageSquare, LayoutDashboard, LogOut, Home, Users, BarChart3 } from 'lucide-react';
+import { BookOpen, ClipboardList, MessageSquare, LayoutDashboard, LogOut, Users, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const navItems = {
@@ -37,11 +37,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (!user) return null;
 
-  const items = navItems[user.role];
-  const gradient = roleGradient[user.role];
+  const items = navItems[user.role] || [];
+  const gradient = roleGradient[user.role] || 'gradient-teacher';
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
