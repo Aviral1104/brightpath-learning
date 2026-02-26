@@ -71,12 +71,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const supabase = getSupabaseClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+
+    // Clear stale sessions that can't be refreshed
+    const clearStaleSession = () => {
+      try {
+        const storageKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+        if (storageKey) localStorage.removeItem(storageKey);
+      } catch {}
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+      if (event === 'TOKEN_REFRESHED' && !nextSession) {
+        clearStaleSession();
+        return;
+      }
       setSession(nextSession);
       if (nextSession?.user) {
         setTimeout(async () => {
-          const appUser = await fetchUserProfile(nextSession.user.id);
-          setUser(appUser);
+          try {
+            const appUser = await fetchUserProfile(nextSession.user.id);
+            setUser(appUser);
+          } catch {
+            setUser(null);
+          }
           setLoading(false);
         }, 0);
       } else {
@@ -91,10 +111,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         fetchUserProfile(initialSession.user.id).then((appUser) => {
           setUser(appUser);
           setLoading(false);
+        }).catch(() => {
+          setUser(null);
+          setLoading(false);
         });
       } else {
         setLoading(false);
       }
+    }).catch(() => {
+      // Session refresh failed (stale token) — clear and let user log in fresh
+      clearStaleSession();
     });
 
     return () => subscription.unsubscribe();
