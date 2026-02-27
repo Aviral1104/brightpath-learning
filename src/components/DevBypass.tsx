@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Code2 } from 'lucide-react';
+import { Code2, Loader2 } from 'lucide-react';
 import { UserRole } from '@/contexts/AuthContext';
+import { getSupabaseClient, isBackendConfigured } from '@/integrations/backend/client';
+import { toast } from 'sonner';
 
 const roles: { role: UserRole; emoji: string; label: string; path: string }[] = [
   { role: 'teacher', emoji: '👨‍🏫', label: 'Teacher', path: '/teacher' },
@@ -9,22 +11,60 @@ const roles: { role: UserRole; emoji: string; label: string; path: string }[] = 
   { role: 'parent', emoji: '👨‍👩‍👧', label: 'Parent', path: '/parent' },
 ];
 
+const DEV_ACCOUNTS: Record<UserRole, { email: string; password: string }> = {
+  teacher: { email: 'dev-teacher@bloom.local', password: 'DevPass123!' },
+  student: { email: 'dev-student@bloom.local', password: 'DevPass123!' },
+  parent: { email: 'dev-parent@bloom.local', password: 'DevPass123!' },
+};
+
 export default function DevBypass() {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState<UserRole | null>(null);
   const navigate = useNavigate();
 
-  const handleSelect = (role: typeof roles[number]) => {
-    // Store dev bypass in sessionStorage so it persists across navigations but not tabs
-    sessionStorage.setItem('dev_bypass', JSON.stringify({
-      id: 'dev-user-id',
-      name: 'Developer',
-      email: 'dev@localhost',
-      role: role.role,
-      school: 'Dev School',
-    }));
-    setOpen(false);
-    // Force full reload so AuthContext picks up the bypass
-    window.location.href = role.path;
+  const handleSelect = async (r: typeof roles[number]) => {
+    if (!isBackendConfigured) {
+      toast.error('Backend not configured');
+      return;
+    }
+    setLoading(r.role);
+    try {
+      const supabase = getSupabaseClient();
+      const creds = DEV_ACCOUNTS[r.role];
+
+      // Try sign in first
+      const { error: signInError } = await supabase.auth.signInWithPassword(creds);
+
+      if (signInError) {
+        // If user doesn't exist, sign up
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: creds.email,
+          password: creds.password,
+          options: {
+            data: { name: `Dev ${r.label}`, role: r.role, school: 'Dev School' },
+          },
+        });
+        if (signUpError) throw signUpError;
+
+        // Try signing in again after signup
+        const { error: retryError } = await supabase.auth.signInWithPassword(creds);
+        if (retryError) {
+          toast.info('Dev account created! Email confirmation may be required. Check auth settings.');
+          setLoading(null);
+          return;
+        }
+      }
+
+      // Clear dev bypass session storage if it exists
+      sessionStorage.removeItem('dev_bypass');
+      toast.success(`Signed in as Dev ${r.label}`);
+      setOpen(false);
+      navigate(r.path);
+    } catch (err: any) {
+      toast.error(err.message || 'Dev login failed');
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -36,9 +76,11 @@ export default function DevBypass() {
             <button
               key={r.role}
               onClick={() => handleSelect(r)}
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors text-foreground"
+              disabled={loading !== null}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors text-foreground disabled:opacity-50"
             >
-              <span>{r.emoji}</span> {r.label} Dashboard
+              {loading === r.role ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>{r.emoji}</span>}
+              {r.label} Dashboard
             </button>
           ))}
         </div>
