@@ -63,17 +63,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for developer bypass
-    try {
-      const devBypass = sessionStorage.getItem('dev_bypass');
-      if (devBypass) {
-        const devUser = JSON.parse(devBypass) as AppUser;
-        setUser(devUser);
-        setLoading(false);
-        return;
-      }
-    } catch {}
-
     if (!isBackendConfigured) {
       setUser(null);
       setSession(null);
