@@ -19,6 +19,7 @@ import ParentDashboard from "./pages/parent/ParentDashboard";
 import ParentProgress from "./pages/parent/ParentProgress";
 import ParentFeedback from "./pages/parent/ParentFeedback";
 import NotFound from "./pages/NotFound";
+import DevBypass from "./components/DevBypass";
 
 const queryClient = new QueryClient();
 
