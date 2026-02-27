@@ -148,7 +148,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    sessionStorage.removeItem('dev_bypass');
     if (!isBackendConfigured) return;
     await getSupabaseClient().auth.signOut();
     setUser(null);
