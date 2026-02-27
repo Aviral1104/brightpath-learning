@@ -52,7 +52,6 @@ export default function AuthPage() {
           toast.error(result.error);
         } else {
           toast.success('Welcome back!');
-          // Navigation will happen via auth state change
         }
       } else {
         if (!name.trim()) {
@@ -67,6 +66,9 @@ export default function AuthPage() {
           toast.success('Account created! You are now signed in.');
         }
       }
+    } catch (err: any) {
+      console.error('Auth error:', err);
+      toast.error(err?.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }

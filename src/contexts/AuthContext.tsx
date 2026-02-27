@@ -63,6 +63,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Clear any stale dev bypass from old code
+    try { sessionStorage.removeItem('dev_bypass'); } catch {}
+
     if (!isBackendConfigured) {
       setUser(null);
       setSession(null);
@@ -71,6 +74,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const supabase = getSupabaseClient();
+
+    // Safety timeout: never stay loading forever
+    const loadingTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 8000);
 
     // Clear stale sessions that can't be refreshed
     const clearStaleSession = () => {
@@ -81,6 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setLoading(false);
+      clearTimeout(loadingTimeout);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
@@ -98,10 +107,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(null);
           }
           setLoading(false);
+          clearTimeout(loadingTimeout);
         }, 0);
       } else {
         setUser(null);
         setLoading(false);
+        clearTimeout(loadingTimeout);
       }
     });
 
@@ -111,15 +122,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         fetchUserProfile(initialSession.user.id).then((appUser) => {
           setUser(appUser);
           setLoading(false);
+          clearTimeout(loadingTimeout);
         }).catch(() => {
           setUser(null);
           setLoading(false);
+          clearTimeout(loadingTimeout);
         });
       } else {
         setLoading(false);
+        clearTimeout(loadingTimeout);
       }
     }).catch(() => {
-      // Session refresh failed (stale token) — clear and let user log in fresh
       clearStaleSession();
     });
 
@@ -128,23 +141,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     if (!isBackendConfigured) return { error: 'Backend is not configured for this build yet.' };
-    const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    return {};
+    try {
+      const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
+      if (error) return { error: error.message };
+      return {};
+    } catch (err: any) {
+      return { error: err?.message || 'Network error — please check your connection and try again.' };
+    }
   };
 
   const signup = async (email: string, password: string, role: UserRole, meta: { name: string; school?: string }) => {
     if (!isBackendConfigured) return { error: 'Backend is not configured for this build yet.' };
-    const { error } = await getSupabaseClient().auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name: meta.name, role, school: meta.school || '' },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    if (error) return { error: error.message };
-    return {};
+    try {
+      const { error } = await getSupabaseClient().auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name: meta.name, role, school: meta.school || '' },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) return { error: error.message };
+      return {};
+    } catch (err: any) {
+      return { error: err?.message || 'Network error — please check your connection and try again.' };
+    }
   };
 
   const logout = async () => {
