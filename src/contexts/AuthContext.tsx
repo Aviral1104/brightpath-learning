@@ -152,16 +152,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signup = async (email: string, password: string, role: UserRole, meta: { name: string; school?: string }) => {
     if (!isBackendConfigured) return { error: 'Backend is not configured for this build yet.' };
-    const { error } = await getSupabaseClient().auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name: meta.name, role, school: meta.school || '' },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    if (error) return { error: error.message };
-    return {};
+    try {
+      const { error } = await getSupabaseClient().auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name: meta.name, role, school: meta.school || '' },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) return { error: error.message };
+      return {};
+    } catch (err: any) {
+      return { error: err?.message || 'Network error — please check your connection and try again.' };
+    }
   };
 
   const logout = async () => {
