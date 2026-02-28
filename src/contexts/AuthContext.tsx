@@ -27,6 +27,38 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const DEV_BYPASS_STORAGE_KEY = 'dev_bypass_user';
+
+const isUserRole = (value: unknown): value is UserRole => value === 'teacher' || value === 'student' || value === 'parent';
+
+function readDevBypassUser(): AppUser | null {
+  try {
+    const raw = sessionStorage.getItem(DEV_BYPASS_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<AppUser>;
+    if (!parsed?.id || !parsed?.name || !parsed?.email || !isUserRole(parsed?.role)) return null;
+
+    return {
+      id: parsed.id,
+      name: parsed.name,
+      email: parsed.email,
+      role: parsed.role,
+      school: parsed.school,
+      phone: parsed.phone,
+      bio: parsed.bio,
+      avatar_url: parsed.avatar_url,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearDevBypassUser() {
+  try {
+    sessionStorage.removeItem(DEV_BYPASS_STORAGE_KEY);
+  } catch {}
+}
 
 async function fetchUserProfile(userId: string): Promise<AppUser | null> {
   const supabase = getSupabaseClient();
@@ -63,11 +95,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Clear any stale dev bypass from old code
-    try { sessionStorage.removeItem('dev_bypass'); } catch {}
-
     if (!isBackendConfigured) {
-      setUser(null);
+      setUser(readDevBypassUser());
       setSession(null);
       setLoading(false);
       return;
@@ -86,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const storageKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
         if (storageKey) localStorage.removeItem(storageKey);
       } catch {}
-      setUser(null);
+      setUser(readDevBypassUser());
       setSession(null);
       setLoading(false);
       clearTimeout(loadingTimeout);
@@ -104,13 +133,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const appUser = await fetchUserProfile(nextSession.user.id);
             setUser(appUser);
           } catch {
-            setUser(null);
+            setUser(readDevBypassUser());
           }
           setLoading(false);
           clearTimeout(loadingTimeout);
         }, 0);
       } else {
-        setUser(null);
+        setUser(readDevBypassUser());
         setLoading(false);
         clearTimeout(loadingTimeout);
       }
@@ -124,11 +153,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
           clearTimeout(loadingTimeout);
         }).catch(() => {
-          setUser(null);
+          setUser(readDevBypassUser());
           setLoading(false);
           clearTimeout(loadingTimeout);
         });
       } else {
+        setUser(readDevBypassUser());
         setLoading(false);
         clearTimeout(loadingTimeout);
       }
@@ -140,6 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
+    clearDevBypassUser();
     if (!isBackendConfigured) return { error: 'Backend is not configured for this build yet.' };
     try {
       const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
@@ -151,6 +182,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signup = async (email: string, password: string, role: UserRole, meta: { name: string; school?: string }) => {
+    clearDevBypassUser();
     if (!isBackendConfigured) return { error: 'Backend is not configured for this build yet.' };
     try {
       const { error } = await getSupabaseClient().auth.signUp({
@@ -169,6 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    clearDevBypassUser();
     if (!isBackendConfigured) return;
     await getSupabaseClient().auth.signOut();
     setUser(null);
@@ -179,7 +212,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (session?.user && isBackendConfigured) {
       const appUser = await fetchUserProfile(session.user.id);
       setUser(appUser);
+      return;
     }
+
+    setUser(readDevBypassUser());
   };
 
   return (
