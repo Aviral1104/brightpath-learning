@@ -1,21 +1,17 @@
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockCourses, mockAssignments, mockSubmissions } from '@/data/mockData';
+import { useAllCourses } from '@/hooks/useStudentCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, ClipboardList, Award, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
-  const courses = mockCourses.filter((c) => c.enrolledStudents.includes(user?.id || ''));
-  const mySubmissions = mockSubmissions.filter((s) => s.studentId === user?.id);
-  const avgScore = mySubmissions.length
-    ? Math.round(mySubmissions.reduce((acc, s) => acc + (s.score / s.totalQuestions) * 100, 0) / mySubmissions.length)
-    : 0;
+  const { data: courses = [], isLoading } = useAllCourses();
 
   const stats = [
-    { label: 'Enrolled Courses', value: courses.length, icon: BookOpen, color: 'bg-secondary/10 text-secondary' },
-    { label: 'Assignments Done', value: mySubmissions.length, icon: ClipboardList, color: 'bg-primary/10 text-primary' },
-    { label: 'Average Score', value: `${avgScore}%`, icon: Award, color: 'bg-accent/10 text-accent' },
+    { label: 'Available Courses', value: courses.length, icon: BookOpen, color: 'bg-secondary/10 text-secondary' },
+    { label: 'Total Chapters', value: courses.reduce((a, c) => a + c.chapters.length, 0), icon: ClipboardList, color: 'bg-primary/10 text-primary' },
+    { label: 'Total Lessons', value: courses.reduce((a, c) => a + c.chapters.reduce((b, ch) => b + ch.subchapters.length, 0), 0), icon: Award, color: 'bg-accent/10 text-accent' },
     { label: 'Keep Going!', value: '🌟', icon: TrendingUp, color: 'bg-success/10 text-success' },
   ];
 
@@ -45,39 +41,26 @@ export default function StudentDashboard() {
 
         <div>
           <h2 className="font-display text-xl font-semibold text-foreground mb-4">My Courses</h2>
+          {isLoading && <p className="text-muted-foreground">Loading...</p>}
+          {!isLoading && courses.length === 0 && (
+            <div className="bg-card rounded-xl border border-border p-8 text-center">
+              <span className="text-4xl block mb-2">📚</span>
+              <p className="text-muted-foreground">No courses available yet. Check back soon!</p>
+            </div>
+          )}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.map((course, i) => (
               <Link key={course.id} to="/student/courses" className="block">
                 <div className="bg-card rounded-xl border border-border p-6 hover:shadow-elevated transition-all hover:-translate-y-0.5 animate-fade-in" style={{ animationDelay: `${0.2 + i * 0.05}s` }}>
-                  <span className="text-4xl mb-3 block">{course.icon}</span>
+                  <span className="text-4xl mb-3 block">{course.icon || '📚'}</span>
                   <h3 className="font-display font-semibold text-foreground mb-1">{course.title}</h3>
                   <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{course.description}</p>
-                  <p className="text-xs text-muted-foreground">{course.chapters.length} chapters • {course.teacherName}</p>
+                  <p className="text-xs text-muted-foreground">{course.chapters.length} chapters • {(course as any).teacherName || 'Teacher'}</p>
                 </div>
               </Link>
             ))}
           </div>
         </div>
-
-        {mySubmissions.length > 0 && (
-          <div>
-            <h2 className="font-display text-xl font-semibold text-foreground mb-4">Recent Feedback</h2>
-            <div className="space-y-3">
-              {mySubmissions.filter(s => s.feedback).map((sub) => {
-                const assignment = mockAssignments.find((a) => a.id === sub.assignmentId);
-                return (
-                  <div key={sub.id} className="bg-card rounded-xl border border-border p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold text-foreground">{assignment?.title}</p>
-                      <span className="font-display font-bold text-success">{sub.score}/{sub.totalQuestions}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{sub.feedback}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );

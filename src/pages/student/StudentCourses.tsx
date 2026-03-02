@@ -1,14 +1,12 @@
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockCourses } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAllCourses } from '@/hooks/useStudentCourses';
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, FileText, Video, Volume2, File, Play } from 'lucide-react';
 
-const mediaIcons = { text: FileText, video: Video, audio: Volume2, document: File };
+const mediaIcons: Record<string, any> = { text: FileText, video: Video, audio: Volume2, document: File };
 
 export default function StudentCourses() {
-  const { user } = useAuth();
-  const courses = mockCourses.filter((c) => c.enrolledStudents.includes(user?.id || ''));
+  const { data: courses = [], isLoading } = useAllCourses();
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
   const [activeSubchapter, setActiveSubchapter] = useState<string | null>(null);
 
@@ -20,15 +18,25 @@ export default function StudentCourses() {
           <p className="text-muted-foreground text-accessible">Explore your lessons and learn at your own pace.</p>
         </div>
 
+        {isLoading && <p className="text-muted-foreground text-center py-8">Loading courses...</p>}
+
+        {!isLoading && courses.length === 0 && (
+          <div className="text-center py-16 bg-card rounded-xl border border-border">
+            <span className="text-5xl block mb-4">📚</span>
+            <h3 className="font-display text-xl font-semibold text-foreground mb-2">No courses available</h3>
+            <p className="text-muted-foreground">Check back soon — your teacher will add courses!</p>
+          </div>
+        )}
+
         <div className="space-y-6">
           {courses.map((course) => (
             <div key={course.id} className="bg-card rounded-xl border border-border overflow-hidden shadow-soft">
               <div className="p-6 border-b border-border">
                 <div className="flex items-center gap-4">
-                  <span className="text-4xl">{course.icon}</span>
+                  <span className="text-4xl">{course.icon || '📚'}</span>
                   <div>
                     <h2 className="font-display text-xl font-bold text-foreground">{course.title}</h2>
-                    <p className="text-sm text-muted-foreground">{course.teacherName}</p>
+                    <p className="text-sm text-muted-foreground">{(course as any).teacherName || 'Teacher'}</p>
                   </div>
                 </div>
               </div>
@@ -50,7 +58,7 @@ export default function StudentCourses() {
                     {expandedChapter === chapter.id && (
                       <div className="bg-muted/30 px-4 pb-4 space-y-2">
                         {chapter.subchapters.map((sub) => {
-                          const Icon = mediaIcons[sub.mediaType || 'text'];
+                          const Icon = mediaIcons[sub.media_type || 'text'] || FileText;
                           const isActive = activeSubchapter === sub.id;
                           return (
                             <button
@@ -63,11 +71,11 @@ export default function StudentCourses() {
                                   <Icon className={`w-4 h-4 ${isActive ? 'text-secondary' : 'text-muted-foreground'}`} />
                                 </div>
                                 <h4 className="font-semibold text-foreground text-sm flex-1">{sub.title}</h4>
-                                {sub.mediaType !== 'text' && (
+                                {sub.media_type !== 'text' && (
                                   <Play className="w-4 h-4 text-muted-foreground" />
                                 )}
                               </div>
-                              {isActive && (
+                              {isActive && sub.content && (
                                 <p className="text-sm text-muted-foreground leading-relaxed mt-2 animate-fade-in">
                                   {sub.content}
                                 </p>
@@ -79,6 +87,9 @@ export default function StudentCourses() {
                     )}
                   </div>
                 ))}
+                {course.chapters.length === 0 && (
+                  <p className="p-4 text-sm text-muted-foreground italic">No chapters added yet.</p>
+                )}
               </div>
             </div>
           ))}
