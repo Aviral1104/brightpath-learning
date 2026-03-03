@@ -40,10 +40,10 @@ export function useAllCourses() {
       // Get teacher profiles for display
       const teacherIds = [...new Set(courses.map((c) => c.teacher_id))];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('public_profiles' as any)
         .select('user_id, name')
         .in('user_id', teacherIds);
-      const teacherNameMap = new Map((profiles || []).map((p) => [p.user_id, p.name]));
+      const teacherNameMap = new Map((profiles || []).map((p: any) => [p.user_id, p.name]));
 
       return courses.map((course) => {
         const courseChapters = (chapters || []).filter((ch) => ch.course_id === course.id);
