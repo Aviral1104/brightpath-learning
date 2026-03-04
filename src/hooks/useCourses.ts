@@ -58,9 +58,15 @@ export function useCourses() {
 
   const createCourse = useMutation({
     mutationFn: async (input: { title: string; description: string; icon: string }) => {
+      const title = input.title?.trim();
+      if (!title || title.length > 200) throw new Error('Title is required and must be under 200 characters.');
+      const description = input.description?.trim() || '';
+      if (description.length > 2000) throw new Error('Description must be under 2000 characters.');
+      const icon = input.icon?.trim() || '📚';
+      if (icon.length > 20) throw new Error('Invalid icon.');
       const { data, error } = await getSupabaseClient()
         .from('courses')
-        .insert({ title: input.title, description: input.description, icon: input.icon, teacher_id: user!.id })
+        .insert({ title, description, icon, teacher_id: user!.id })
         .select()
         .single();
       if (error) throw error;
@@ -87,9 +93,15 @@ export function useCourses() {
 
   const updateCourse = useMutation({
     mutationFn: async (input: { id: string; title: string; description: string; icon: string }) => {
+      const title = input.title?.trim();
+      if (!title || title.length > 200) throw new Error('Title is required and must be under 200 characters.');
+      const description = input.description?.trim() || '';
+      if (description.length > 2000) throw new Error('Description must be under 2000 characters.');
+      const icon = input.icon?.trim() || '📚';
+      if (icon.length > 20) throw new Error('Invalid icon.');
       const { error } = await getSupabaseClient()
         .from('courses')
-        .update({ title: input.title, description: input.description, icon: input.icon })
+        .update({ title, description, icon })
         .eq('id', input.id);
       if (error) throw error;
     },
@@ -149,11 +161,15 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const addChapter = useMutation({
     mutationFn: async (input: { title: string; description: string }) => {
+      const title = input.title?.trim();
+      if (!title || title.length > 200) throw new Error('Title is required and must be under 200 characters.');
+      const description = input.description?.trim() || '';
+      if (description.length > 2000) throw new Error('Description must be under 2000 characters.');
       const existing = query.data?.chapters.length || 0;
       const { error } = await getSupabaseClient().from('chapters').insert({
         course_id: courseId!,
-        title: input.title,
-        description: input.description,
+        title,
+        description,
         sort_order: existing,
       });
       if (error) throw error;
@@ -164,7 +180,11 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const updateChapter = useMutation({
     mutationFn: async (input: { id: string; title: string; description: string }) => {
-      const { error } = await getSupabaseClient().from('chapters').update({ title: input.title, description: input.description }).eq('id', input.id);
+      const title = input.title?.trim();
+      if (!title || title.length > 200) throw new Error('Title is required and must be under 200 characters.');
+      const description = input.description?.trim() || '';
+      if (description.length > 2000) throw new Error('Description must be under 2000 characters.');
+      const { error } = await getSupabaseClient().from('chapters').update({ title, description }).eq('id', input.id);
       if (error) throw error;
     },
     onSuccess: () => { refetch(); toast.success('Chapter updated!'); },
@@ -182,12 +202,16 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const addSubchapter = useMutation({
     mutationFn: async (input: { chapter_id: string; title: string; content: string; media_type: string }) => {
+      const title = input.title?.trim();
+      if (!title || title.length > 200) throw new Error('Title is required and must be under 200 characters.');
+      const content = input.content?.trim() || '';
+      if (content.length > 50000) throw new Error('Content must be under 50000 characters.');
       const chapter = query.data?.chapters.find((c) => c.id === input.chapter_id);
       const existing = chapter?.subchapters.length || 0;
       const { error } = await getSupabaseClient().from('subchapters').insert({
         chapter_id: input.chapter_id,
-        title: input.title,
-        content: input.content,
+        title,
+        content,
         media_type: input.media_type,
         sort_order: existing,
       });
@@ -199,8 +223,12 @@ export function useCourseDetail(courseId: string | undefined) {
 
   const updateSubchapter = useMutation({
     mutationFn: async (input: { id: string; title: string; content: string; media_type: string }) => {
+      const title = input.title?.trim();
+      if (!title || title.length > 200) throw new Error('Title is required and must be under 200 characters.');
+      const content = input.content?.trim() || '';
+      if (content.length > 50000) throw new Error('Content must be under 50000 characters.');
       const { error } = await getSupabaseClient().from('subchapters').update({
-        title: input.title, content: input.content, media_type: input.media_type,
+        title, content, media_type: input.media_type,
       }).eq('id', input.id);
       if (error) throw error;
     },
