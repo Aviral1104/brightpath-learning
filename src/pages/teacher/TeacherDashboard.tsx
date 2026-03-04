@@ -25,10 +25,14 @@ export default function TeacherDashboard() {
   const [saving, setSaving] = useState(false);
 
   const handleSaveProfile = async () => {
-    if (!editName.trim()) { toast.error('Name is required'); return; }
+    const name = editName.trim();
+    if (!name || name.length > 200) { toast.error('Name is required and must be under 200 characters.'); return; }
+    if (editSchool.length > 300) { toast.error('School must be under 300 characters.'); return; }
+    if (editPhone.length > 50) { toast.error('Phone must be under 50 characters.'); return; }
+    if (editBio.length > 2000) { toast.error('Bio must be under 2000 characters.'); return; }
     setSaving(true);
     try {
-      const { error } = await getSupabaseClient().from('profiles').update({ name: editName, school: editSchool, phone: editPhone, bio: editBio }).eq('user_id', user?.id);
+      const { error } = await getSupabaseClient().from('profiles').update({ name, school: editSchool.trim(), phone: editPhone.trim(), bio: editBio.trim() }).eq('user_id', user?.id);
       if (error) throw error;
       await refreshProfile();
       toast.success('Profile updated!');
