@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          chapter_id: string | null
+          course_id: string
+          created_at: string
+          difficulty: string
+          due_date: string | null
+          id: string
+          teacher_id: string
+          title: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id: string
+          created_at?: string
+          difficulty?: string
+          due_date?: string | null
+          id?: string
+          teacher_id: string
+          title: string
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string
+          created_at?: string
+          difficulty?: string
+          due_date?: string | null
+          id?: string
+          teacher_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           course_id: string
@@ -111,6 +159,70 @@ export type Database = {
         }
         Relationships: []
       }
+      mcq_options: {
+        Row: {
+          id: string
+          is_correct: boolean
+          question_id: string
+          sort_order: number
+          text: string
+        }
+        Insert: {
+          id?: string
+          is_correct?: boolean
+          question_id: string
+          sort_order?: number
+          text: string
+        }
+        Update: {
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          sort_order?: number
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcq_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "mcq_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcq_questions: {
+        Row: {
+          assignment_id: string
+          difficulty: string
+          id: string
+          question: string
+          sort_order: number
+        }
+        Insert: {
+          assignment_id: string
+          difficulty?: string
+          id?: string
+          question: string
+          sort_order?: number
+        }
+        Update: {
+          assignment_id?: string
+          difficulty?: string
+          id?: string
+          question?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcq_questions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -187,6 +299,50 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submissions: {
+        Row: {
+          answers: Json
+          assignment_id: string
+          feedback: string | null
+          id: string
+          insights: string | null
+          score: number
+          student_id: string
+          submitted_at: string
+          total_questions: number
+        }
+        Insert: {
+          answers?: Json
+          assignment_id: string
+          feedback?: string | null
+          id?: string
+          insights?: string | null
+          score?: number
+          student_id: string
+          submitted_at?: string
+          total_questions?: number
+        }
+        Update: {
+          answers?: Json
+          assignment_id?: string
+          feedback?: string | null
+          id?: string
+          insights?: string | null
+          score?: number
+          student_id?: string
+          submitted_at?: string
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
             referencedColumns: ["id"]
           },
         ]
