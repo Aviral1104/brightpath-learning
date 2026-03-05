@@ -1,11 +1,15 @@
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockSubmissions, mockAssignments } from '@/data/mockData';
+import { useStudentSubmissions, useStudentAssignments } from '@/hooks/useAssignments';
 import { useAuth } from '@/contexts/AuthContext';
 import { MessageSquare, Star } from 'lucide-react';
 
 export default function StudentFeedback() {
   const { user } = useAuth();
-  const mySubmissions = mockSubmissions.filter((s) => s.studentId === user?.id && s.feedback);
+  const { data: submissions } = useStudentSubmissions();
+  const { data: assignments } = useStudentAssignments();
+
+  const assignmentMap = Object.fromEntries((assignments || []).map(a => [a.id, a]));
+  const withFeedback = (submissions || []).filter(s => s.feedback);
 
   return (
     <DashboardLayout>
@@ -15,20 +19,20 @@ export default function StudentFeedback() {
           <p className="text-muted-foreground text-accessible">See what your teacher says about your work.</p>
         </div>
 
-        {mySubmissions.length === 0 ? (
+        {withFeedback.length === 0 ? (
           <div className="text-center py-16">
             <span className="text-5xl block mb-4">📝</span>
             <p className="text-muted-foreground text-lg">No feedback yet. Complete an assignment to receive feedback!</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {mySubmissions.map((sub) => {
-              const assignment = mockAssignments.find((a) => a.id === sub.assignmentId);
-              const scorePercent = Math.round((sub.score / sub.totalQuestions) * 100);
+            {withFeedback.map((sub) => {
+              const assignment = assignmentMap[sub.assignment_id];
+              const scorePercent = sub.total_questions > 0 ? Math.round((sub.score / sub.total_questions) * 100) : 0;
               return (
                 <div key={sub.id} className="bg-card rounded-xl border border-border p-6 shadow-soft">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="font-display font-bold text-foreground">{assignment?.title}</h2>
+                    <h2 className="font-display font-bold text-foreground">{assignment?.title || 'Assignment'}</h2>
                     <span className={`font-display text-xl font-bold ${scorePercent >= 80 ? 'text-success' : 'text-warning'}`}>
                       {scorePercent}%
                     </span>
